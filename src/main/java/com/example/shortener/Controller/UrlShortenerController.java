@@ -1,37 +1,51 @@
-
 package com.example.shortener;
 
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
-
+/**
+ * REST controller for URL shortening service.
+ */
 @RestController
+@RequestMapping("/api/urls")
 @RequiredArgsConstructor
 public class UrlShortenerController {
 
     private final UrlShortenerService service;
 
-    @PostMapping(path = "/shorten", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<ShortenResponse> shorten(@Valid @RequestBody ShortenRequest request) {
-        ShortenResponse resp = service.shorten(request.url());
-        return ResponseEntity.status(HttpStatus.CREATED).body(resp);
+    /**
+     * Creates a short URL for the given original URL.
+     */
+    @PostMapping(value = "/shorten", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ShortenResponse> createShortUrl(@Valid @RequestBody ShortenRequest request) {
+        ShortenResponse response = service.shorten(request.url());
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    /**
+     * Redirects to the original URL for the given short code.
+     */
     @GetMapping("/{shortCode}")
-    public void redirect(@PathVariable String shortCode, HttpServletResponse response) throws IOException {
-        String original = service.resolveAndHit(shortCode);
-        response.setStatus(HttpServletResponse.SC_FOUND);
-        response.setHeader("Location", original);
+    public ResponseEntity<Void> redirectToOriginalUrl(@PathVariable String shortCode) {
+        String originalUrl = service.resolveAndHit(shortCode);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(HttpHeaders.LOCATION, originalUrl);
+
+        return ResponseEntity.status(HttpStatus.FOUND).headers(headers).build();
     }
 
-    @GetMapping(path = "/stats/{shortCode}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public StatsResponse stats(@PathVariable String shortCode) {
-        return service.stats(shortCode);
+    /**
+     * Retrieves statistics for the given short code.
+     */
+    @GetMapping(value = "/stats/{shortCode}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<StatsResponse> getStats(@PathVariable String shortCode) {
+        StatsResponse stats = service.stats(shortCode);
+        return ResponseEntity.ok(stats);
     }
 }
