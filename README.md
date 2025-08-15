@@ -1,5 +1,5 @@
 
-# URL Shortener (Java 17, Spring Boot 3)
+# Link Zap (Java 17, Spring Boot 3)
 
 A minimal, production-quality URL shortener API.
 
